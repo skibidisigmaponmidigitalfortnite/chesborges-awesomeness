@@ -6,14 +6,23 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-
 app.use(express.json());
-app.set('trust proxy', true);
+
+// Fix the trust proxy issue - be more specific about trusted proxies
+// Only trust Railway's proxy if you're on Railway
+if (process.env.RAILWAY_ENVIRONMENT) {
+  app.set('trust proxy', 1); // Trust first proxy (Railway)
+} else {
+  app.set('trust proxy', false); // Don't trust any proxy in other environments
+}
+
 const rateLimit = require('express-rate-limit');
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 app.use(limiter);
 
